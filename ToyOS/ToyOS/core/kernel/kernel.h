@@ -20,6 +20,9 @@ int kernel_create_process(Kernel *kernel,
                           int io_at,
                           int io_wait,
                           PCB **pcb_out);
+// ToyOS/core/kernel/kernel.h (맨 아래 부분)
+
 void kernel_print_process_snapshot(const Kernel *kernel, FILE *stream);
+void kernel_run(Kernel *kernel, int ticks); // <--- 이 줄을 추가하세요!
 
 #endif

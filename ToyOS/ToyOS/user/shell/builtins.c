@@ -19,6 +19,9 @@ typedef struct {
     const char *description;
 } BuiltinCommand;
 
+
+static int builtin_set_sched(Shell *shell, int argc, char *argv[]);
+static int builtin_run(Shell *shell, int argc, char *argv[]);
 static int builtin_cd(Shell *shell, int argc, char *argv[]);
 static int builtin_help(Shell *shell, int argc, char *argv[]);
 static int builtin_exit(Shell *shell, int argc, char *argv[]);
@@ -44,7 +47,11 @@ static const BuiltinCommand builtin_commands[] = {
         "create <name> <total_time> io <io_at> <io_wait>",
         "Create a simulated process PCB with one optional I/O event"
     },
-    { "ps", builtin_ps, "ps", "Show simulated processes and the ready queue" }
+    { "ps", builtin_ps, "ps", "Show simulated processes and the ready queue" },
+    { "set_sched", builtin_set_sched, "set_sched <fcfs | rr> [quantum]", "Set the scheduling algorithm" },
+    { "run", builtin_run, "run <ticks>", "Run the scheduler for the given number of ticks" },
+
+
 };
 
 static const size_t builtin_command_count =
@@ -232,4 +239,59 @@ int builtins_execute(struct Shell *shell, int argc, char *argv[]) {
     }
 
     return BUILTIN_NOT_FOUND;
+}
+
+static int builtin_set_sched(Shell *shell, int argc, char *argv[]) {
+    if (argc < 2) {
+        fprintf(stderr, "mini-shell: set_sched: missing algorithm (fcfs or rr)\n");
+        return BUILTIN_CONTINUE;
+    }
+
+    if (strcmp(argv[1], "fcfs") == 0) {
+        shell->kernel.scheduler.algorithm = SCHEDULER_FCFS;
+        shell->kernel.scheduler.is_configured = 1;
+        printf("Scheduler configured to FCFS.\n");
+    } else if (strcmp(argv[1], "rr") == 0) {
+        shell->kernel.scheduler.algorithm = SCHEDULER_RR;
+        shell->kernel.scheduler.is_configured = 1;
+        if (argc >= 3) {
+            int quantum;
+            if (util_parse_positive_int(argv[2], &quantum) == 0) {
+                shell->kernel.scheduler.rr_quantum = quantum;
+            }
+        }
+        printf("Scheduler configured to RR (quantum=%d).\n", shell->kernel.scheduler.rr_quantum);
+    } else if (strcmp(argv[1], "hrrn") == 0) {  // <--- 여기서부터 4줄 추가!
+        shell->kernel.scheduler.algorithm = SCHEDULER_HRRN;
+        shell->kernel.scheduler.is_configured = 1;
+        printf("Scheduler configured to HRRN.\n");
+    }
+    
+    
+    else {
+        fprintf(stderr, "mini-shell: set_sched: unknown algorithm '%s'\n", argv[1]);
+    }
+
+    return BUILTIN_CONTINUE;
+}
+
+static int builtin_run(Shell *shell, int argc, char *argv[]) {
+    int ticks = 1; // 기본 1 tick
+
+    if (!scheduler_is_configured(&shell->kernel.scheduler)) {
+        fprintf(stderr, "mini-shell: run: scheduler is not configured. Use 'set_sched' first.\n");
+        return BUILTIN_CONTINUE;
+    }
+
+    if (argc >= 2) {
+        if (util_parse_positive_int(argv[1], &ticks) != 0) {
+            fprintf(stderr, "mini-shell: run: invalid ticks value\n");
+            return BUILTIN_CONTINUE;
+        }
+    }
+
+    kernel_run(&shell->kernel, ticks);
+    printf("Running scheduler for %d ticks...\n", ticks);
+    
+    return BUILTIN_CONTINUE;
 }

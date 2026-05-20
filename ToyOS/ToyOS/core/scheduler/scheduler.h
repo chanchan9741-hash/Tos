@@ -7,7 +7,8 @@
 
 typedef enum {
     SCHEDULER_FCFS,
-    SCHEDULER_RR
+    SCHEDULER_RR,
+    SCHEDULER_HRRN
 } SchedulerAlgorithm;
 
 typedef struct {

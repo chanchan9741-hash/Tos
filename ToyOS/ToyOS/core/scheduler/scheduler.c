@@ -18,6 +18,9 @@ const char *scheduler_algorithm_name(SchedulerAlgorithm algorithm) {
         return "FCFS";
     case SCHEDULER_RR:
         return "RR";
+
+    case SCHEDULER_HRRN:    // <--- 추가
+        return "HRRN";
     default:
         return "UNKNOWN";
     }
